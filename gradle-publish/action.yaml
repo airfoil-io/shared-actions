@@ -1,0 +1,37 @@
+name: 'gradle-publish'
+description: 'Gradle publish'
+
+inputs:
+  artifactVersion:
+    description: 'Set artifactVersion property (-PartifactVersion=XXX)'
+    required: true
+    type: string
+  token:
+    description: 'GPR access token'
+    required: true
+    type: string
+  user:
+    description: 'GPR access username'
+    required: true
+    type: string
+
+runs:
+  using: composite
+
+  steps:
+    - name: Gradle publish options
+      shell: bash
+      run: |
+        PUBLISH_OPTIONS=""
+        PUBLISH_OPTIONS="$PUBLISH_OPTIONS -PartifactVersion=$ARTIFACT_VERSION"
+        echo "GRADLE_PUBLISH_OPTIONS=$PUBLISH_OPTIONS"
+        echo "GRADLE_PUBLISH_OPTIONS=$PUBLISH_OPTIONS" >> $GITHUB_ENV
+      env:
+        ARTIFACT_VERSION: ${{ inputs.artifactVersion }}
+
+    - name: Gradle publish
+      shell: bash
+      run: ./gradlew publish ${GRADLE_PUBLISH_OPTIONS}
+      env:
+        GPR_USER: ${{ inputs.user }}
+        GPR_KEY: ${{ inputs.token }}

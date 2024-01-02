@@ -1,0 +1,95 @@
+name: 'gradle-build'
+description: 'Gradle build'
+
+inputs:
+  artifactVersion:
+    description: 'Set artifactVersion property (-PartifactVersion=XXX)'
+    required: true
+    type: string
+  excludeTests:
+    description: 'Exclude tests (-x test)'
+    required: false
+    type: boolean
+    default: false
+  noDaemon:
+    description: 'Do not use the Gradle daemon to run the build (--no-daemon)'
+    required: false
+    type: boolean
+    default: true
+  parallelBuild:
+    description: 'Build projects in parallel (--parallel)'
+    required: false
+    type: boolean
+    default: true
+  refreshDependencies:
+    description: 'Refresh the state of dependencies (--refresh-dependencies)'
+    required: false
+    type: boolean
+    default: true
+  stacktrace:
+    description: 'Print out the stacktrace for all exceptions (--stacktrace)'
+    required: false
+    type: boolean
+    default: true
+  token:
+    description: 'GPR access token'
+    required: true
+    type: string
+  user:
+    description: 'GPR access username'
+    required: true
+    type: string
+  useSnapshots:
+    description: 'Use snapshots (-PuseSnapshots)'
+    required: false
+    type: boolean
+    default: false
+
+runs:
+  using: composite
+
+  steps:
+    - name: Gradle build options
+      shell: bash
+      run: |
+        BUILD_OPTIONS=""
+        BUILD_OPTIONS="$BUILD_OPTIONS -PartifactVersion=$ARTIFACT_VERSION"
+        if [ "$EXCLUDE_TESTS" = "true" ]; then
+          BUILD_OPTIONS="$BUILD_OPTIONS -x test"
+        fi
+        if [ "$NO_DAEMON" = "true" ] ; then
+          BUILD_OPTIONS="$BUILD_OPTIONS --no-daemon"
+        else
+          BUILD_OPTIONS="$BUILD_OPTIONS --daemon"
+        fi
+        if [ "$PARALLEL_BUILD" = "true" ] ; then
+          BUILD_OPTIONS="$BUILD_OPTIONS --parallel"
+        else
+          BUILD_OPTIONS="$BUILD_OPTIONS --no-parallel"
+        fi
+        if [ "$REFRESH_DEPENDENCIES" = "true" ] ; then
+          BUILD_OPTIONS="$BUILD_OPTIONS --refresh-dependencies"
+        fi
+        if [ "$STACKTRACE" = "true" ] ; then
+          BUILD_OPTIONS="$BUILD_OPTIONS --stacktrace"
+        fi
+        if [ "$USE_SNAPSHOTS" = "true" ]; then
+          BUILD_OPTIONS="$BUILD_OPTIONS -PuseSnapshots"
+        fi
+        echo "GRADLE_BUILD_OPTIONS=$BUILD_OPTIONS"
+        echo "GRADLE_BUILD_OPTIONS=$BUILD_OPTIONS" >> $GITHUB_ENV
+      env:
+        ARTIFACT_VERSION: ${{ inputs.artifactVersion }}
+        EXCLUDE_TESTS: ${{ inputs.excludeTests }}
+        NO_DAEMON: ${{ inputs.noDaemon }}
+        PARALLEL_BUILD: ${{ inputs.parallelBuild }}
+        REFRESH_DEPENDENCIES: ${{ inputs.refreshDependencies }}
+        STACKTRACE: ${{ inputs.stacktrace }}
+        USE_SNAPSHOTS: ${{ inputs.useSnapshots }}
+
+    - name: Gradle build
+      shell: bash
+      run: ./gradlew clean build ${GRADLE_BUILD_OPTIONS}
+      env:
+        GPR_USER: ${{ inputs.user }}
+        GPR_KEY: ${{ inputs.token }}
